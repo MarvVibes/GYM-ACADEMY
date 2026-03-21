@@ -1,0 +1,7 @@
+{
+  "name": "Gym Academy",
+  "description": "Elite performance training environment engineered for the disciplined few. The Kinetic Editorial experience.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

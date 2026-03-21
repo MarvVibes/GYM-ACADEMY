@@ -1,0 +1,159 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {uid}
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - email: string (required, format: email)
+    //   - displayName: string (required)
+    //   - photoURL: string (optional, format: uri)
+    //   - role: string (required, enum: ['user', 'admin'])
+    //   - membership: string (optional)
+    //   - membershipId: string (optional)
+    //   - membershipStatus: string (optional, enum: ['active', 'inactive', 'pending'])
+    //   - createdAt: number (required, immutable)
+    //   - updatedAt: number (optional)
+    //
+    // Collection: bookings
+    // Document ID: {bookingId}
+    // Fields:
+    //   - id: string (optional)
+    //   - userId: string (required, immutable)
+    //   - userName: string (required)
+    //   - userEmail: string (required, format: email)
+    //   - discipline: string (required)
+    //   - instructor: string (required)
+    //   - date: string (required)
+    //   - time: string (required)
+    //   - status: string (required, enum: ['confirmed', 'cancelled', 'completed'])
+    //   - createdAt: number (required, immutable)
+    //
+    // Collection: memberships
+    // Document ID: {membershipId}
+    // Fields:
+    //   - id: string (optional)
+    //   - userId: string (required, immutable)
+    //   - tierId: string (required)
+    //   - tierName: string (required)
+    //   - price: string (required)
+    //   - status: string (required, enum: ['active', 'inactive', 'pending'])
+    //   - startDate: number (required)
+    //   - endDate: number (optional)
+    //   - nextBillingDate: number (optional)
+    //   - createdAt: number (required, immutable)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAuthorizedAdminEmail(email) {
+      return email is string && (email.lower() == "marvglobalofficial@gmail.com" || email.lower() == "admin@gymacademy.com");
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          isAuthorizedAdminEmail(request.auth.token.email) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+        );
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email', 'displayName', 'role', 'createdAt']) &&
+             hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'role', 'membership', 'membershipId', 'membershipStatus', 'createdAt', 'updatedAt']) &&
+             (data.uid == request.auth.uid || isAdmin()) &&
+             (data.email == request.auth.token.email || isAdmin() || isAuthorizedAdminEmail(data.email)) &&
+             data.role in ['user', 'admin'] &&
+             (data.role == 'user' || isAuthorizedAdminEmail(data.email) || isAdmin()) &&
+             data.createdAt is number &&
+             (data.photoURL == null || isValidUrl(data.photoURL));
+    }
+
+    function isValidBooking(data) {
+      return hasRequiredFields(['userId', 'userName', 'userEmail', 'discipline', 'instructor', 'date', 'time', 'status', 'createdAt']) &&
+             hasOnlyAllowedFields(['id', 'userId', 'userName', 'userEmail', 'discipline', 'instructor', 'date', 'time', 'status', 'createdAt']) &&
+             (data.userId == request.auth.uid || isAdmin()) &&
+             data.status in ['confirmed', 'cancelled', 'completed'] &&
+             data.createdAt is number;
+    }
+
+    function isValidMembership(data) {
+      return hasRequiredFields(['userId', 'tierId', 'tierName', 'price', 'status', 'startDate', 'createdAt']) &&
+             hasOnlyAllowedFields(['id', 'userId', 'tierId', 'tierName', 'price', 'status', 'startDate', 'endDate', 'nextBillingDate', 'createdAt']) &&
+             (data.userId == request.auth.uid || isAdmin()) &&
+             data.status in ['active', 'inactive', 'pending'] &&
+             data.startDate is number &&
+             data.createdAt is number;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin() || isAuthorizedAdminEmail(request.auth.token.email);
+      allow create: if (isOwner(uid) || isAdmin() || isAuthorizedAdminEmail(request.auth.token.email)) && isValidUser(request.resource.data);
+      allow update: if (isOwner(uid) || isAdmin() || isAuthorizedAdminEmail(request.auth.token.email)) && isValidUser(request.resource.data);
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidBooking(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && 
+                    isValidBooking(request.resource.data) &&
+                    request.resource.data.userId == resource.data.userId &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+
+    match /memberships/{membershipId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidMembership(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && 
+                    isValidMembership(request.resource.data) &&
+                    request.resource.data.userId == resource.data.userId &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

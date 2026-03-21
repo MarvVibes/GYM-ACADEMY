@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User account information and membership status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user ID from Firebase Auth" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "displayName": { "type": "string", "description": "User's full name" },
+        "photoURL": { "type": "string", "format": "uri", "description": "User's profile picture URL" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "User access level" },
+        "membershipId": { "type": "string", "description": "ID of the active membership" },
+        "membershipStatus": { "type": "string", "enum": ["active", "inactive", "pending"], "description": "Current status of membership" },
+        "createdAt": { "type": "number", "description": "Timestamp when the profile was created" }
+      },
+      "required": ["uid", "email", "displayName", "role", "createdAt"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Class session booking information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique booking ID" },
+        "userId": { "type": "string", "description": "ID of the user who booked" },
+        "userName": { "type": "string", "description": "Name of the user" },
+        "userEmail": { "type": "string", "format": "email", "description": "Email of the user" },
+        "discipline": { "type": "string", "description": "Name of the class/discipline" },
+        "instructor": { "type": "string", "description": "Name of the instructor" },
+        "date": { "type": "string", "description": "Date of the session" },
+        "time": { "type": "string", "description": "Time of the session" },
+        "status": { "type": "string", "enum": ["confirmed", "cancelled", "completed"], "description": "Current status of the booking" },
+        "createdAt": { "type": "number", "description": "Timestamp when the booking was created" }
+      },
+      "required": ["userId", "discipline", "instructor", "date", "time", "status", "createdAt"]
+    },
+    "Membership": {
+      "title": "Membership",
+      "description": "User membership subscription details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique membership ID" },
+        "userId": { "type": "string", "description": "ID of the user" },
+        "tierId": { "type": "string", "description": "ID of the pricing tier" },
+        "tierName": { "type": "string", "description": "Name of the pricing tier" },
+        "price": { "type": "string", "description": "Price of the membership" },
+        "status": { "type": "string", "enum": ["active", "inactive", "pending"], "description": "Current status of the membership" },
+        "startDate": { "type": "number", "description": "Timestamp when the membership started" },
+        "endDate": { "type": "number", "description": "Timestamp when the membership expires" },
+        "createdAt": { "type": "number", "description": "Timestamp when the membership was created" }
+      },
+      "required": ["userId", "tierId", "tierName", "price", "status", "startDate", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "Collection of user profiles"
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Collection of class bookings"
+    },
+    "/memberships/{membershipId}": {
+      "schema": "Membership",
+      "description": "Collection of user memberships"
+    }
+  }
+}
