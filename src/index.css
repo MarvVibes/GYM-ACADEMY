@@ -26,6 +26,7 @@
 
 @layer base {
   body {
+    background-color: #131313;
     @apply bg-background text-on-background font-body selection:bg-primary-container selection:text-on-primary-container;
   }
 }

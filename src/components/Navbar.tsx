@@ -88,7 +88,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentScreen, onNavigate, user 
                 >
                   <div className="flex items-center gap-3 mb-4 pb-4 border-b border-outline-variant/10">
                     <div className="w-12 h-12 rounded-full overflow-hidden">
-                      <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      <img 
+                        src={user.photoURL || 'https://picsum.photos/seed/user/100/100'} 
+                        alt={user.displayName} 
+                        className="w-full h-full object-cover" 
+                        referrerPolicy="no-referrer" 
+                      />
                     </div>
                     <div>
                       <p className="text-sm font-black uppercase tracking-tight">{user.displayName}</p>

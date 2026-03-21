@@ -197,7 +197,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) =
                             <tr key={user.uid} className="hover:bg-surface-container-high/30 transition-colors group">
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full grayscale group-hover:grayscale-0 transition-all" />
+                                  <img 
+                                    src={user.photoURL || 'https://picsum.photos/seed/user/100/100'} 
+                                    alt="" 
+                                    className="w-8 h-8 rounded-full grayscale group-hover:grayscale-0 transition-all" 
+                                    referrerPolicy="no-referrer"
+                                  />
                                   <div>
                                     <p className="text-sm font-bold uppercase tracking-tight">{user.displayName}</p>
                                     <p className="text-[10px] text-on-surface-variant">{user.email}</p>

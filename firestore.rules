@@ -68,7 +68,7 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() &&
         (
-          isAuthorizedAdminEmail(request.auth.token.email) ||
+          (request.auth.token.keys().contains('email') && isAuthorizedAdminEmail(request.auth.token.email)) ||
           (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
         );
     }
@@ -86,7 +86,7 @@ service cloud.firestore {
     }
 
     function isValidUrl(url) {
-      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*") || url == "");
     }
 
     // ===============================================================

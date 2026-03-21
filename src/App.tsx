@@ -38,7 +38,7 @@ const App: React.FC = () => {
               uid: firebaseUser.uid,
               email: firebaseUser.email || '',
               displayName: firebaseUser.displayName || (isAdminEmail ? 'Academy Staff' : 'Athlete'),
-              photoURL: firebaseUser.photoURL || '',
+              photoURL: firebaseUser.photoURL || null,
               role: isAdminEmail ? 'admin' : 'user',
               createdAt: Date.now(),
               membershipStatus: 'inactive'
@@ -56,7 +56,7 @@ const App: React.FC = () => {
               uid: firebaseUser.uid,
               email: firebaseUser.email || '',
               displayName: firebaseUser.displayName || 'Academy Staff',
-              photoURL: firebaseUser.photoURL || '',
+              photoURL: firebaseUser.photoURL || null,
               role: 'admin',
               createdAt: Date.now(),
               membershipStatus: 'inactive'
@@ -74,26 +74,34 @@ const App: React.FC = () => {
 
   // Smooth Scroll Initialization
   useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: 'vertical',
-      gestureOrientation: 'vertical',
-      smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: 2,
-      infinite: false,
-    });
+    let lenis: Lenis | null = null;
+    let rafId: number | null = null;
 
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
+    try {
+      lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: 'vertical',
+        gestureOrientation: 'vertical',
+        smoothWheel: true,
+        wheelMultiplier: 1,
+        touchMultiplier: 2,
+        infinite: false,
+      });
+
+      function raf(time: number) {
+        lenis?.raf(time);
+        rafId = requestAnimationFrame(raf);
+      }
+
+      rafId = requestAnimationFrame(raf);
+    } catch (error) {
+      console.error("Lenis initialization error:", error);
     }
 
-    requestAnimationFrame(raf);
-
     return () => {
-      lenis.destroy();
+      if (lenis) lenis.destroy();
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, []);
 
