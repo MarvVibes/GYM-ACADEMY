@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Screen, UserProfile } from '../types';
 import { Menu, X, LogIn, LogOut, User as UserIcon, Calendar, ShieldCheck } from 'lucide-react';
 import { MusicPlayer } from './MusicPlayer';
-import { loginWithGoogle, logout } from '../firebase';
+import { supabase, isSupabaseConfigured } from '../supabase';
 
 interface NavbarProps {
   currentScreen: Screen;
@@ -14,6 +14,28 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ currentScreen, onNavigate, user }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    if (!isSupabaseConfigured) return;
+    await supabase.auth.signOut();
+  };
+
+  const handleSignIn = async () => {
+    if (!isSupabaseConfigured) {
+      alert('Supabase is not configured. Please set your environment variables.');
+      return;
+    }
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+    }
+  };
 
   const navItems: { label: string; screen: Screen }[] = [
     { label: 'Home', screen: 'home' },
@@ -119,7 +141,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentScreen, onNavigate, user 
                       My Bookings
                     </button>
                     <button 
-                      onClick={() => logout()}
+                      onClick={handleSignOut}
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-error/10 text-error transition-colors text-xs font-bold uppercase tracking-widest"
                     >
                       <LogOut className="w-4 h-4" />
@@ -133,13 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentScreen, onNavigate, user 
         ) : (
           <div className="flex items-center gap-4">
             <button 
-              onClick={async () => {
-                try {
-                  await loginWithGoogle();
-                } catch (error) {
-                  // Error already logged in firebase.ts
-                }
-              }}
+              onClick={handleSignIn}
               className="hidden sm:flex items-center gap-2 kinetic-gradient px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-on-primary-container hover:scale-105 active:scale-95 transition-transform"
             >
               <LogIn className="w-4 h-4" />
@@ -199,7 +215,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentScreen, onNavigate, user 
                   My Bookings
                 </button>
                 <button 
-                  onClick={() => logout()}
+                  onClick={handleSignOut}
                   className="font-label text-sm font-bold uppercase tracking-widest text-left text-error"
                 >
                   Sign Out
@@ -209,13 +225,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentScreen, onNavigate, user 
             {!user && (
               <>
                 <button 
-                  onClick={async () => {
-                    try {
-                      await loginWithGoogle();
-                    } catch (error) {
-                      // Error already logged in firebase.ts
-                    }
-                  }}
+                  onClick={handleSignIn}
                   className="kinetic-gradient w-full py-4 rounded-lg text-sm font-bold uppercase tracking-widest text-on-primary-container"
                 >
                   Join Academy

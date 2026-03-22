@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { db, collection, onSnapshot, query, orderBy, updateDoc, doc, deleteDoc, handleFirestoreError, OperationType } from '../firebase';
+import { supabase } from '../supabase';
 import { UserProfile, Booking, Membership } from '../types';
 import { Users, Calendar, CreditCard, CheckCircle, XCircle, Trash2, Search, Filter, ChevronRight, ShieldCheck } from 'lucide-react';
 
@@ -21,46 +21,111 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser }) =
   useEffect(() => {
     if (currentUser.role !== 'admin') return;
 
-    setLoading(true);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch Users
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (usersError) throw usersError;
+        setUsers(usersData.map(u => ({
+          uid: u.uid,
+          email: u.email,
+          displayName: u.display_name,
+          photoURL: u.photo_url,
+          role: u.role,
+          membership: u.membership_status === 'active' ? 'Elite' : undefined,
+          membershipStatus: u.membership_status,
+          createdAt: new Date(u.created_at).getTime()
+        })));
 
-    // Real-time listeners for all collections
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const usersData = snapshot.docs.map(doc => doc.data() as UserProfile);
-      setUsers(usersData.sort((a, b) => b.createdAt - a.createdAt));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
+        // Fetch Bookings
+        const { data: bookingsData, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (bookingsError) throw bookingsError;
+        setBookings(bookingsData.map(b => ({
+          id: b.id,
+          userId: b.user_id,
+          userName: b.user_name,
+          userEmail: b.user_email,
+          discipline: b.discipline,
+          instructor: b.instructor,
+          date: b.date,
+          time: b.time,
+          status: b.status,
+          createdAt: new Date(b.created_at).getTime()
+        })));
 
-    const unsubBookings = onSnapshot(query(collection(db, 'bookings'), orderBy('createdAt', 'desc')), (snapshot) => {
-      const bookingsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Booking));
-      setBookings(bookingsData);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'bookings'));
+        // Fetch Memberships
+        const { data: membershipsData, error: membershipsError } = await supabase
+          .from('memberships')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (membershipsError) throw membershipsError;
+        setMemberships(membershipsData.map(m => ({
+          id: m.id,
+          userId: m.user_id,
+          tierId: m.tier_id,
+          tierName: m.tier_name,
+          price: m.price,
+          status: m.status,
+          startDate: new Date(m.start_date).getTime(),
+          createdAt: new Date(m.created_at).getTime()
+        })));
 
-    const unsubMemberships = onSnapshot(query(collection(db, 'memberships'), orderBy('createdAt', 'desc')), (snapshot) => {
-      const membershipsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Membership));
-      setMemberships(membershipsData);
-      setLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'memberships'));
+      } catch (error) {
+        console.error('Admin fetch error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    // Set up real-time subscriptions
+    const channel = supabase
+      .channel('admin-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'memberships' }, () => fetchData())
+      .subscribe();
 
     return () => {
-      unsubUsers();
-      unsubBookings();
-      unsubMemberships();
+      supabase.removeChannel(channel);
     };
   }, [currentUser]);
 
   const handleUpdateBookingStatus = async (bookingId: string, status: Booking['status']) => {
     try {
-      await updateDoc(doc(db, 'bookings', bookingId), { status });
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status })
+        .eq('id', bookingId);
+      
+      if (error) throw error;
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `bookings/${bookingId}`);
+      console.error('Update booking error:', error);
     }
   };
 
   const handleDeleteBooking = async (bookingId: string) => {
     if (!window.confirm('Are you sure you want to delete this booking record?')) return;
     try {
-      await deleteDoc(doc(db, 'bookings', bookingId));
+      const { error } = await supabase
+        .from('bookings')
+        .delete()
+        .eq('id', bookingId);
+      
+      if (error) throw error;
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `bookings/${bookingId}`);
+      console.error('Delete booking error:', error);
     }
   };
 

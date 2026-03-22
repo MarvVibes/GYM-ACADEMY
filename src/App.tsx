@@ -13,8 +13,9 @@ import { UserBookings } from './components/UserBookings';
 import { AdminDashboard } from './components/AdminDashboard';
 import { CustomCursor } from './components/CustomCursor';
 import { Screen, UserProfile } from './types';
-import { auth, db, onAuthStateChanged, doc, getDoc, setDoc } from './firebase';
+import { supabase, isSupabaseConfigured } from './supabase';
 import Lenis from 'lenis';
+import { AlertTriangle } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -23,53 +24,88 @@ const App: React.FC = () => {
 
   // Auth State Listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const supabaseUser = session.user;
         try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const { data: userProfile, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('uid', supabaseUser.id)
+            .single();
           
-          if (userDoc.exists()) {
-            setUser(userDoc.data() as UserProfile);
+          if (userProfile && !error) {
+            setUser({
+              uid: userProfile.uid,
+              email: userProfile.email,
+              displayName: userProfile.display_name,
+              photoURL: userProfile.photo_url,
+              role: userProfile.role,
+              membership: userProfile.membership_status === 'active' ? 'Elite' : undefined,
+              membershipId: userProfile.membership_id,
+              membershipStatus: userProfile.membership_status,
+              createdAt: new Date(userProfile.created_at).getTime()
+            });
           } else {
             // Create initial profile
-            const normalizedEmail = (firebaseUser.email || '').toLowerCase();
+            const normalizedEmail = (supabaseUser.email || '').toLowerCase();
             const isAdminEmail = normalizedEmail === 'marvglobalofficial@gmail.com' || normalizedEmail === 'admin@gymacademy.com';
-            const newProfile: UserProfile = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || (isAdminEmail ? 'Academy Staff' : 'Athlete'),
-              photoURL: firebaseUser.photoURL || null,
+            
+            const newProfileData = {
+              uid: supabaseUser.id,
+              email: supabaseUser.email || '',
+              display_name: supabaseUser.user_metadata.full_name || (isAdminEmail ? 'Academy Staff' : 'Athlete'),
+              photo_url: supabaseUser.user_metadata.avatar_url || null,
               role: isAdminEmail ? 'admin' : 'user',
-              createdAt: Date.now(),
-              membershipStatus: 'inactive'
+              membership_status: 'inactive'
             };
-            await setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
-            setUser(newProfile);
+
+            const { data: insertedProfile, error: insertError } = await supabase
+              .from('users')
+              .insert([newProfileData])
+              .select()
+              .single();
+
+            if (insertedProfile && !insertError) {
+              setUser({
+                uid: insertedProfile.uid,
+                email: insertedProfile.email,
+                displayName: insertedProfile.display_name,
+                photoURL: insertedProfile.photo_url,
+                role: insertedProfile.role,
+                membershipStatus: insertedProfile.membership_status,
+                createdAt: new Date(insertedProfile.created_at).getTime()
+              });
+            }
           }
         } catch (error: any) {
           console.error("Auth state error:", error);
-          // If it's a permission error, we still want to set the user state locally if we know they are an admin
-          const normalizedEmail = (firebaseUser.email || '').toLowerCase();
-          const isAdminEmail = normalizedEmail === 'marvglobalofficial@gmail.com' || normalizedEmail === 'admin@gymacademy.com';
-          if (isAdminEmail) {
-            setUser({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || 'Academy Staff',
-              photoURL: firebaseUser.photoURL || null,
-              role: 'admin',
-              createdAt: Date.now(),
-              membershipStatus: 'inactive'
-            });
-          }
         }
       } else {
         setUser(null);
       }
       setLoading(false);
+    };
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        checkUser();
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
     });
 
-    return () => unsubscribe();
+    return () => subscription.unsubscribe();
   }, []);
 
   // Smooth Scroll Initialization
@@ -151,6 +187,14 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-on-background selection:bg-primary-container selection:text-on-primary-container">
+      {!isSupabaseConfigured && (
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-error-container text-on-error-container p-4 flex items-center justify-center gap-4 border-b border-error/20">
+          <AlertTriangle className="w-5 h-5" />
+          <div className="text-sm font-label font-bold uppercase tracking-widest">
+            Supabase Configuration Missing. Please set <code className="bg-surface-container-highest px-2 py-1 rounded">VITE_SUPABASE_URL</code> and <code className="bg-surface-container-highest px-2 py-1 rounded">VITE_SUPABASE_ANON_KEY</code> in the Secrets panel.
+          </div>
+        </div>
+      )}
       <CustomCursor />
       <Navbar currentScreen={currentScreen} onNavigate={setCurrentScreen} user={user} />
       

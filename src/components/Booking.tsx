@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { TRAINERS } from '../constants';
 import { Screen, UserProfile, Booking as BookingType } from '../types';
 import { Calendar, Clock, User, ChevronRight, CheckCircle2, LogIn, Loader2 } from 'lucide-react';
-import { db, collection, addDoc, loginWithGoogle, handleFirestoreError, OperationType } from '../firebase';
+import { supabase } from '../supabase';
 
 interface BookingProps {
   onNavigate: (screen: Screen) => void;
@@ -42,28 +42,34 @@ export const Booking: React.FC<BookingProps> = ({ onNavigate, user }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      await loginWithGoogle();
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const bookingData: Omit<BookingType, 'id'> = {
-        userId: user.uid,
-        userName: formData.name,
-        userEmail: formData.email,
-        discipline: formData.discipline,
-        instructor: formData.instructor,
-        date: formData.date,
-        time: formData.time,
-        status: 'confirmed',
-        createdAt: Date.now()
-      };
+      const { error } = await supabase
+        .from('bookings')
+        .insert([{
+          user_id: user.uid,
+          user_name: formData.name,
+          user_email: formData.email,
+          discipline: formData.discipline,
+          instructor: formData.instructor,
+          date: formData.date,
+          time: formData.time,
+          status: 'confirmed'
+        }]);
 
-      await addDoc(collection(db, 'bookings'), bookingData);
+      if (error) throw error;
       onNavigate('success');
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'bookings');
+      console.error('Booking error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -243,9 +249,14 @@ export const Booking: React.FC<BookingProps> = ({ onNavigate, user }) => {
                     <button 
                       onClick={async () => {
                         try {
-                          await loginWithGoogle();
+                          await supabase.auth.signInWithOAuth({
+                            provider: 'google',
+                            options: {
+                              redirectTo: window.location.origin
+                            }
+                          });
                         } catch (error) {
-                          // Error already logged in firebase.ts
+                          console.error('Login error:', error);
                         }
                       }}
                       className="w-full flex items-center justify-center gap-3 kinetic-gradient px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs text-on-primary-container hover:scale-[1.02] transition-transform shadow-xl shadow-primary-container/20"

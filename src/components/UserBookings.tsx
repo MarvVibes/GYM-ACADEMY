@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { db, collection, query, where, getDocs, deleteDoc, doc, handleFirestoreError, OperationType } from '../firebase';
+import { supabase } from '../supabase';
 import { UserProfile, Booking } from '../types';
 import { Calendar, Clock, User, Trash2, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
 
@@ -18,17 +18,30 @@ export const UserBookings: React.FC<UserBookingsProps> = ({ user }) => {
       if (!user) return;
       
       try {
-        const q = query(collection(db, 'bookings'), where('userId', '==', user.uid));
-        const querySnapshot = await getDocs(q);
-        const bookingsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('*')
+          .eq('user_id', user.uid)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const bookingsData = data.map(b => ({
+          id: b.id,
+          userId: b.user_id,
+          userName: b.user_name,
+          userEmail: b.user_email,
+          discipline: b.discipline,
+          instructor: b.instructor,
+          date: b.date,
+          time: b.time,
+          status: b.status,
+          createdAt: new Date(b.created_at).getTime()
         })) as Booking[];
         
-        // Sort by date (simple string sort for now, could be improved with real timestamps)
-        setBookings(bookingsData.sort((a, b) => b.createdAt - a.createdAt));
+        setBookings(bookingsData);
       } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, 'bookings');
+        console.error('Fetch bookings error:', error);
       } finally {
         setLoading(false);
       }
@@ -42,10 +55,15 @@ export const UserBookings: React.FC<UserBookingsProps> = ({ user }) => {
     
     setDeletingId(id);
     try {
-      await deleteDoc(doc(db, 'bookings', id));
+      const { error } = await supabase
+        .from('bookings')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
       setBookings(prev => prev.filter(b => b.id !== id));
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'bookings');
+      console.error('Delete booking error:', error);
     } finally {
       setDeletingId(null);
     }

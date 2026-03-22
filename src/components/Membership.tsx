@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { PRICING } from '../constants';
 import { CheckCircle2, MinusCircle, Loader2 } from 'lucide-react';
 import { Screen, UserProfile, Membership as MembershipType } from '../types';
-import { db, collection, addDoc, doc, updateDoc, loginWithGoogle, handleFirestoreError, OperationType } from '../firebase';
+import { supabase } from '../supabase';
 
 interface MembershipProps {
   user: UserProfile | null;
@@ -16,38 +16,49 @@ export const Membership: React.FC<MembershipProps> = ({ user, onNavigate }) => {
   const handleJoin = async (tier: typeof PRICING[0]) => {
     if (!user) {
       try {
-        await loginWithGoogle();
+        await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin
+          }
+        });
       } catch (error) {
-        // Error already logged in firebase.ts
+        console.error('Login error:', error);
       }
       return;
     }
 
     setJoiningTier(tier.id);
     try {
-      const membershipData: Omit<MembershipType, 'id'> = {
-        userId: user.uid,
-        tierId: tier.id,
-        tierName: tier.name,
-        price: tier.price,
-        status: 'active',
-        startDate: Date.now(),
-        nextBillingDate: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days later
-        createdAt: Date.now()
-      };
-
       // Save membership record
-      await addDoc(collection(db, 'memberships'), membershipData);
+      const { error: membershipError } = await supabase
+        .from('memberships')
+        .insert([{
+          user_id: user.uid,
+          tier_id: tier.id,
+          tier_name: tier.name,
+          price: tier.price,
+          status: 'active',
+          start_date: new Date().toISOString(),
+          end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        }]);
+
+      if (membershipError) throw membershipError;
 
       // Update user profile with membership status
-      await updateDoc(doc(db, 'users', user.uid), {
-        membership: tier.name,
-        updatedAt: Date.now()
-      });
+      const { error: userError } = await supabase
+        .from('users')
+        .update({
+          membership_id: tier.id,
+          membership_status: 'active'
+        })
+        .eq('uid', user.uid);
+
+      if (userError) throw userError;
 
       onNavigate('success');
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'memberships');
+      console.error('Membership error:', error);
     } finally {
       setJoiningTier(null);
     }
