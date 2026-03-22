@@ -83,7 +83,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               onClick={() => onNavigate('membership')}
               className="group relative kinetic-gradient px-8 py-3.5 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-[0_0_25px_rgba(227,27,35,0.25)] w-full sm:w-auto"
             >
-              <span className="relative z-10 font-label font-black text-xs uppercase tracking-widest text-on-primary-container">Join the Academy</span>
+              <span className="relative z-10 font-label font-black text-xs uppercase tracking-widest text-on-primary-container">Claim Your Spot</span>
             </button>
             
             <button 
@@ -93,7 +93,10 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               Book Session
             </button>
             
-            <div className="flex items-center gap-3 group cursor-pointer py-2">
+            <div 
+              onClick={() => onNavigate('about')}
+              className="flex items-center gap-3 group cursor-pointer py-2"
+            >
               <div className="w-9 h-9 rounded-full border border-on-background/10 flex items-center justify-center group-hover:bg-primary-container group-hover:border-primary-container transition-all">
                 <Play className="w-3.5 h-3.5 text-on-background fill-current" />
               </div>
@@ -229,7 +232,8 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                className={`relative p-8 rounded-2xl bg-surface-container-low border border-outline-variant/5 hover:border-primary-container/30 transition-all group overflow-hidden flex flex-col justify-end ${service.span}`}
+                onClick={() => onNavigate('schedule')}
+                className={`relative p-8 rounded-2xl bg-surface-container-low border border-outline-variant/5 hover:border-primary-container/30 transition-all group overflow-hidden flex flex-col justify-end cursor-pointer ${service.span}`}
               >
                 <div className="absolute inset-0 z-0">
                   <img 
@@ -273,34 +277,39 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { title: 'Expert Coaching', icon: <Users className="w-7 h-7 text-primary-container" />, img: 'https://images.unsplash.com/photo-1594381898411-846e7d193883?q=80&w=800&auto=format&fit=crop' }, // Coach showing student
-              { title: 'Elite Equipment', icon: <Dumbbell className="w-7 h-7 text-primary-container" />, img: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=800&auto=format&fit=crop' },
-              { title: 'Recovery Lab', icon: <HeartPulse className="w-7 h-7 text-primary-container" />, img: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=800&auto=format&fit=crop' } // Vegetable meal
-            ].map((benefit, i) => (
-              <motion.div 
-                key={i}
-                whileHover={{ y: -10 }}
-                className="group relative h-[350px] md:h-[450px] overflow-hidden rounded-xl bg-surface-container-low transition-all duration-500"
-              >
-                <div className="absolute inset-0">
-                  <img 
-                    className="w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-700" 
-                    src={benefit.img} 
-                    alt={benefit.title}
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"></div>
-                </div>
-                <div className="absolute bottom-0 left-0 p-8 w-full">
-                  <div className="mb-4">{benefit.icon}</div>
-                  <h3 className="font-headline text-xl font-bold mb-3 uppercase">{benefit.title}</h3>
-                  <p className="text-white/70 font-body text-xs mb-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                    Train with world-class athletes and sports scientists dedicated to your physiological peak.
-                  </p>
-                  <div className="h-[2px] w-0 bg-primary-container group-hover:w-full transition-all duration-500"></div>
-                </div>
-              </motion.div>
-            ))}
+              { title: 'Expert Coaching', icon: <Users className="w-7 h-7 text-primary-container" />, img: 'https://images.unsplash.com/photo-1594381898411-846e7d193883?q=80&w=800&auto=format&fit=crop', desc: 'Train with world-class athletes and sports scientists dedicated to your physiological peak.' },
+              { title: 'Elite Equipment', icon: <Dumbbell className="w-7 h-7 text-primary-container" />, img: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=800&auto=format&fit=crop', desc: 'Access biomechanically optimized machinery designed for maximum muscle recruitment.' },
+              { title: 'Recovery Lab', icon: <HeartPulse className="w-7 h-7 text-primary-container" />, img: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=800&auto=format&fit=crop', desc: 'Utilize advanced recovery protocols including cryotherapy and infrared technology.' }
+            ].map((benefit, i) => {
+              const [isTapped, setIsTapped] = useState(false);
+              
+              return (
+                <motion.div 
+                  key={i}
+                  whileHover={{ y: -10 }}
+                  onClick={() => setIsTapped(!isTapped)}
+                  className="group relative h-[350px] md:h-[450px] overflow-hidden rounded-xl bg-surface-container-low transition-all duration-500 cursor-pointer"
+                >
+                  <div className="absolute inset-0">
+                    <img 
+                      className={`w-full h-full object-cover opacity-40 transition-transform duration-700 ${isTapped ? 'scale-110' : 'group-hover:scale-110'}`} 
+                      src={benefit.img} 
+                      alt={benefit.title}
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"></div>
+                  </div>
+                  <div className="absolute bottom-0 left-0 p-8 w-full">
+                    <div className="mb-4">{benefit.icon}</div>
+                    <h3 className="font-headline text-xl font-bold mb-3 uppercase">{benefit.title}</h3>
+                    <p className={`text-white/70 font-body text-xs mb-6 transition-all duration-300 ${isTapped ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100'}`}>
+                      {benefit.desc}
+                    </p>
+                    <div className={`h-[2px] bg-primary-container transition-all duration-500 ${isTapped ? 'w-full' : 'w-0 group-hover:w-full'}`}></div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -403,7 +412,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 onClick={() => onNavigate('membership')}
                 className="bg-on-background text-background px-10 py-3.5 rounded-lg font-label font-black text-xs uppercase tracking-widest hover:bg-primary-container hover:text-on-primary-container transition-all duration-300"
               >
-                Join Now
+                Claim Membership
               </button>
               <button 
                 onClick={() => onNavigate('booking')}

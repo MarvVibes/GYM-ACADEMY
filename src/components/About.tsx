@@ -30,7 +30,11 @@ const AnimatedCounter: React.FC<{ value: number; suffix?: string }> = ({ value, 
   return <span ref={ref}>{count}{suffix}</span>;
 };
 
-export const About: React.FC = () => {
+interface AboutProps {
+  onNavigate?: (screen: any) => void;
+}
+
+export const About: React.FC<AboutProps> = ({ onNavigate }) => {
   return (
     <main className="pt-32 pb-20 overflow-x-hidden">
       {/* Hero Section */}
@@ -243,7 +247,10 @@ export const About: React.FC = () => {
         <div className="max-w-7xl mx-auto bg-surface-container-high p-12 md:p-20 rounded-3xl text-center relative overflow-hidden">
           <div className="relative z-10">
             <h2 className="font-headline text-3xl md:text-5xl font-black uppercase mb-8 tracking-tighter">Ready to join the<br/>Academy?</h2>
-            <button className="kinetic-gradient text-on-primary-container px-12 py-4 rounded-xl font-black uppercase tracking-widest text-sm hover:scale-105 transition-all shadow-2xl shadow-primary-container/20">
+            <button 
+              onClick={() => onNavigate?.('membership')}
+              className="kinetic-gradient text-on-primary-container px-12 py-4 rounded-xl font-black uppercase tracking-widest text-sm hover:scale-105 transition-all shadow-2xl shadow-primary-container/20"
+            >
               Start Your Journey
             </button>
           </div>

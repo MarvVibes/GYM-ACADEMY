@@ -4,7 +4,11 @@ import { TRAINERS } from '../constants';
 import { X, Trophy, Target, Zap, Shield, HeartPulse, ArrowRight } from 'lucide-react';
 import { Trainer } from '../types';
 
-export const Trainers: React.FC = () => {
+interface TrainersProps {
+  onNavigate?: (screen: any) => void;
+}
+
+export const Trainers: React.FC<TrainersProps> = ({ onNavigate }) => {
   const [selectedTrainer, setSelectedTrainer] = useState<Trainer | null>(null);
 
   return (
@@ -79,7 +83,10 @@ export const Trainers: React.FC = () => {
                     </div>
                   </div>
 
-                  <button className="w-full kinetic-gradient py-4 rounded-xl font-black uppercase tracking-widest text-xs text-on-primary-container hover:scale-[1.02] transition-transform shadow-xl shadow-primary-container/20">
+                  <button 
+                    onClick={() => onNavigate?.('booking')}
+                    className="w-full kinetic-gradient py-4 rounded-xl font-black uppercase tracking-widest text-xs text-on-primary-container hover:scale-[1.02] transition-transform shadow-xl shadow-primary-container/20"
+                  >
                     Book Private Session
                   </button>
                 </div>
@@ -166,10 +173,16 @@ export const Trainers: React.FC = () => {
               Our trainers are ready to engineer your transformation. Join the elite community and unlock your genetic potential.
             </p>
             <div className="flex flex-wrap gap-4">
-              <button className="bg-on-primary-container text-primary-container px-8 py-3 rounded-lg font-label font-bold uppercase tracking-wider hover:scale-105 transition-transform">
+              <button 
+                onClick={() => onNavigate?.('booking')}
+                className="bg-on-primary-container text-primary-container px-8 py-3 rounded-lg font-label font-bold uppercase tracking-wider hover:scale-105 transition-transform"
+              >
                 Book Consultation
               </button>
-              <button className="border-2 border-on-primary-container/30 text-on-primary-container px-8 py-3 rounded-lg font-label font-bold uppercase tracking-wider hover:bg-on-primary-container/10 transition-colors">
+              <button 
+                onClick={() => onNavigate?.('schedule')}
+                className="border-2 border-on-primary-container/30 text-on-primary-container px-8 py-3 rounded-lg font-label font-bold uppercase tracking-wider hover:bg-on-primary-container/10 transition-colors"
+              >
                 View Schedule
               </button>
             </div>

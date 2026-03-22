@@ -169,13 +169,13 @@ const App: React.FC = () => {
       case 'success':
         return <Success onNavigate={setCurrentScreen} />;
       case 'trainers':
-        return <Trainers />;
+        return <Trainers onNavigate={setCurrentScreen} />;
       case 'membership':
         return <Membership user={user} onNavigate={setCurrentScreen} />;
       case 'schedule':
-        return <Schedule />;
+        return <Schedule onNavigate={setCurrentScreen} />;
       case 'about':
-        return <About />;
+        return <About onNavigate={setCurrentScreen} />;
       case 'bookings':
         return <UserBookings user={user} />;
       case 'admin':

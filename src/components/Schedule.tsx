@@ -3,7 +3,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SCHEDULE } from '../constants';
 import { Clock, Filter } from 'lucide-react';
 
-export const Schedule: React.FC = () => {
+interface ScheduleProps {
+  onNavigate?: (screen: any) => void;
+}
+
+export const Schedule: React.FC<ScheduleProps> = ({ onNavigate }) => {
   const [typeFilter, setTypeFilter] = useState('All');
   const [intensityFilter, setIntensityFilter] = useState('All');
 
@@ -176,7 +180,12 @@ export const Schedule: React.FC = () => {
                   </div>
 
                   <div className="md:col-span-2 text-right">
-                    <button className="w-full md:w-auto kinetic-gradient text-on-primary-container px-6 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary-container/10">Book Slot</button>
+                    <button 
+                      onClick={() => onNavigate?.('booking')}
+                      className="w-full md:w-auto kinetic-gradient text-on-primary-container px-6 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary-container/10"
+                    >
+                      Book Slot
+                    </button>
                   </div>
                 </motion.div>
               ))

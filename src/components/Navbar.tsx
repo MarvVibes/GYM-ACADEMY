@@ -155,11 +155,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentScreen, onNavigate, user 
         ) : (
           <div className="flex items-center gap-4">
             <button 
-              onClick={handleSignIn}
+              onClick={() => handleNavigate('booking')}
               className="hidden sm:flex items-center gap-2 kinetic-gradient px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-on-primary-container hover:scale-105 active:scale-95 transition-transform"
             >
-              <LogIn className="w-4 h-4" />
-              Join Academy
+              <Calendar className="w-4 h-4" />
+              Book Session
             </button>
           </div>
         )}
@@ -225,10 +225,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentScreen, onNavigate, user 
             {!user && (
               <>
                 <button 
-                  onClick={handleSignIn}
+                  onClick={() => handleNavigate('booking')}
                   className="kinetic-gradient w-full py-4 rounded-lg text-sm font-bold uppercase tracking-widest text-on-primary-container"
                 >
-                  Join Academy
+                  Book Session
                 </button>
               </>
             )}
